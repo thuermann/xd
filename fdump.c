@@ -7,7 +7,7 @@
 #include <string.h>
 
 #define FALSE 0
-#define TRUE  1
+#define TRUE  !FALSE
 
 void fprhex(FILE *fp, int digits, long value);
 
@@ -36,12 +36,12 @@ int main(int argc, char *argv[])
 		error = 1;
 	if (error == 2)
 	{
-		fputs("Usage: FDUMP file [-o file]\n", stderr);
+		fputs("Usage: fdump file [-o file]\n", stderr);
 		return(-1);
 	}
 	if (error == 1)
 	{
-		fputs("File open error!\n", stderr);
+		fputs("File open error.\n", stderr);
 		return(-1);
 	}
 
