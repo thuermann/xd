@@ -1,8 +1,9 @@
 /*
- * $Id: xd.c,v 1.1 2005/02/17 13:38:30 urs Exp $
+ * $Id: xd.c,v 1.2 2005/02/17 13:51:18 urs Exp $
  */
 
 #include <stdio.h>
+#include <string.h>
 #include <ctype.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -26,6 +27,8 @@ int main(int argc, char **argv)
 	}
     else
 	dump_file(0);
+
+    return 0;
 }
 
 #define HEX(n, i) ("0123456789abcdef"[((n) >> 4 * i) & 0xf])
