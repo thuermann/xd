@@ -1,10 +1,12 @@
 /*  fdump.c
  *  (c) 1989 by Urs Thuermann
- *  last modified: 13.11.1990
+ *  last modified: 19.03.1992
  */
 
 #include <stdio.h>
 #include <string.h>
+
+#define SIZE 150*1024L
 
 #define FALSE 0
 #define TRUE  !FALSE
@@ -42,6 +44,12 @@ int main(int argc, char *argv[])
 	if (error == 1)
 	{
 		fputs("File open error.\n", stderr);
+		return(-1);
+	}
+
+	if (setvbuf(fpin, NULL, _IOFBF, SIZE) != 0)
+	{
+		fputs("Out of memory error.\n", stderr);
 		return(-1);
 	}
 
