@@ -1,5 +1,5 @@
 /*
- * $Id: xd.c,v 1.2 2005/02/17 13:51:18 urs Exp $
+ * $Id: xd.c,v 1.3 2005/04/19 08:44:11 urs Exp $
  */
 
 #include <stdio.h>
@@ -11,6 +11,7 @@
 #define BSIZE 4096
 
 static void dump_file(int fd);
+static ssize_t rread(int fd, void *buffer, size_t count);
 
 int main(int argc, char **argv)
 {
@@ -42,7 +43,7 @@ static void dump_file(int fd)
     int nbytes, count, i, flag, ident;
 
     buffer = buffer1;
-    while ((nbytes = read(fd, buffer, BSIZE)) > 0) {
+    while ((nbytes = rread(fd, buffer, BSIZE)) > 0) {
 	for (ptr = buffer; ptr < buffer + nbytes; ptr += 16) {
 	    count = nbytes - (ptr - buffer);
 	    if (count >= 16) {
@@ -99,4 +100,17 @@ static void dump_file(int fd)
 
     if (nbytes < 0)
 	perror("read");
+}
+
+static ssize_t rread(int fd, void *buffer, size_t count)
+{
+    int ret = 0, nbytes;
+    char *buf = buffer;
+
+    while ((nbytes = read(fd, buf, count)) > 0)
+	count -= nbytes, buf += nbytes, ret += nbytes;
+    if (ret == 0)
+	ret = nbytes;
+
+    return ret;
 }
