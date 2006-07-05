@@ -1,5 +1,5 @@
 /*
- * $Id: xd.c,v 1.4 2006/05/03 20:48:28 urs Exp $
+ * $Id: xd.c,v 1.5 2006/07/05 13:06:28 urs Exp $
  */
 
 #include <stdio.h>
@@ -13,7 +13,8 @@
 static void dump_file(int fd);
 static ssize_t rread(int fd, void *buffer, size_t count);
 static void dump(char *dst, void *src, int len, void **lastp, int *flagp,
-		 int address);
+		 int addr);
+static void address(char *dst, int addr, char term);
 
 int main(int argc, char **argv)
 {
@@ -34,33 +35,23 @@ int main(int argc, char **argv)
     return 0;
 }
 
-#define HEX(n, i) ("0123456789abcdef"[((n) >> 4 * i) & 0xf])
-
 static void dump_file(int fd)
 {
     unsigned char buffer1[BSIZE], buffer2[BSIZE];
     unsigned char *buffer;
     void *last = NULL;
-    char *cp, out[5 * BSIZE];
-    int address = 0;
+    char out[5 * BSIZE];
+    int addr = 0;
     int nbytes, flag = 0;
 
     buffer = buffer1;
     while ((nbytes = rread(fd, buffer, BSIZE)) > 0) {
-	dump(out, buffer, nbytes, &last, &flag, address);
+	dump(out, buffer, nbytes, &last, &flag, addr);
 	fputs(out, stdout);
-	address += nbytes;
+	addr += nbytes;
 	buffer = (buffer == buffer1) ? buffer2 : buffer1;
     }
-    cp = out;
-    *cp++ = HEX(address, 5);
-    *cp++ = HEX(address, 4);
-    *cp++ = HEX(address, 3);
-    *cp++ = HEX(address, 2);
-    *cp++ = HEX(address, 1);
-    *cp++ = HEX(address, 0);
-    *cp++ = '\n';
-    *cp = 0;
+    address(out, addr, '\n');
     fputs(out, stdout);
 
     if (nbytes < 0)
@@ -80,8 +71,10 @@ static ssize_t rread(int fd, void *buffer, size_t count)
     return ret;
 }
 
+#define HEX(n, i) ("0123456789abcdef"[((n) >> 4 * i) & 0xf])
+
 static void dump(char *dst, void *src, int len, void **lastp, int *flagp,
-		 int address)
+		 int addr)
 {
     unsigned char *buffer = src, *last;
     unsigned char *ptr;
@@ -100,13 +93,8 @@ static void dump(char *dst, void *src, int len, void **lastp, int *flagp,
 	    ident = 0;
 
 	if (!ident) {
-	    *cp++ = HEX(address, 5);
-	    *cp++ = HEX(address, 4);
-	    *cp++ = HEX(address, 3);
-	    *cp++ = HEX(address, 2);
-	    *cp++ = HEX(address, 1);
-	    *cp++ = HEX(address, 0);
-	    *cp++ = ' ';
+	    address(cp, addr, ' ');
+	    cp += 7;
 	    for (i = 0; i < 16; i++) {
 		if (i % 4 == 0)
 		    *cp++ = ' ';
@@ -124,11 +112,23 @@ static void dump(char *dst, void *src, int len, void **lastp, int *flagp,
 	    *cp++ = '*', *cp++ = '\n';
 	    flag = 1;
 	}
-	address += count;
+	addr += count;
 	last = ptr;
     }
     *cp = 0;
 
     *lastp = last;
     *flagp = flag;
+}
+
+static void address(char *dst, int addr, char term)
+{
+    *dst++ = HEX(addr, 5);
+    *dst++ = HEX(addr, 4);
+    *dst++ = HEX(addr, 3);
+    *dst++ = HEX(addr, 2);
+    *dst++ = HEX(addr, 1);
+    *dst++ = HEX(addr, 0);
+    *dst++ = term;
+    *dst = 0;
 }
