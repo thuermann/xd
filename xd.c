@@ -1,5 +1,5 @@
 /*
- * $Id: xd.c,v 1.5 2006/07/05 13:06:28 urs Exp $
+ * $Id: xd.c,v 1.6 2006/07/05 14:59:53 urs Exp $
  */
 
 #include <stdio.h>
@@ -10,7 +10,7 @@
 
 #define BSIZE 4096
 
-static void dump_file(int fd);
+static void dump_file(char *fname);
 static ssize_t rread(int fd, void *buffer, size_t count);
 static void dump(char *dst, void *src, int len, void **lastp, int *flagp,
 		 int addr);
@@ -18,31 +18,30 @@ static void address(char *dst, int addr, char term);
 
 int main(int argc, char **argv)
 {
-    int fd;
-
     if (argc > 1)
-	while (++argv, --argc) {
-	    if ((fd = open(*argv, O_RDONLY)) < 0) {
-		perror(*argv);
-		continue;
-	    }
-	    dump_file(fd);
-	    close(fd);
-	}
+	while (++argv, --argc)
+	    dump_file(*argv);
     else
-	dump_file(0);
+	dump_file("-");
 
     return 0;
 }
 
-static void dump_file(int fd)
+static void dump_file(char *fname)
 {
     unsigned char buffer1[BSIZE], buffer2[BSIZE];
     unsigned char *buffer;
     void *last = NULL;
     char out[5 * BSIZE];
     int addr = 0;
-    int nbytes, flag = 0;
+    int fd, nbytes, flag = 0;
+
+    if (strcmp(fname, "-") == 0)
+	fd = 0;
+    else if ((fd = open(fname, O_RDONLY)) < 0) {
+	perror(fname);
+	return;
+    }
 
     buffer = buffer1;
     while ((nbytes = rread(fd, buffer, BSIZE)) > 0) {
@@ -55,7 +54,9 @@ static void dump_file(int fd)
     fputs(out, stdout);
 
     if (nbytes < 0)
-	perror("read");
+	perror(fname);
+    if (fd != 0)
+	close(fd);
 }
 
 static ssize_t rread(int fd, void *buffer, size_t count)
