@@ -1,17 +1,14 @@
 /*
- * $Id: xd.c,v 1.6 2006/07/05 14:59:53 urs Exp $
+ * $Id: xd.c,v 1.7 2008/08/23 18:46:25 urs Exp $
  */
 
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
-#include <unistd.h>
-#include <fcntl.h>
 
 #define BSIZE 4096
 
 static void dump_file(char *fname);
-static ssize_t rread(int fd, void *buffer, size_t count);
 static void dump(char *dst, void *src, int len, void **lastp, int *flagp,
 		 int addr);
 static void address(char *dst, int addr, char term);
@@ -34,42 +31,32 @@ static void dump_file(char *fname)
     void *last = NULL;
     char out[5 * BSIZE];
     int addr = 0;
-    int fd, nbytes, flag = 0;
+    int nbytes, flag = 0;
+    FILE *fp;
 
     if (strcmp(fname, "-") == 0)
-	fd = 0;
-    else if ((fd = open(fname, O_RDONLY)) < 0) {
+	fp = stdin;
+    else if (!(fp = fopen(fname, "r"))) {
 	perror(fname);
 	return;
     }
 
     buffer = buffer1;
-    while ((nbytes = rread(fd, buffer, BSIZE)) > 0) {
+    do {
+	nbytes = fread(buffer, 1, BSIZE, fp);
 	dump(out, buffer, nbytes, &last, &flag, addr);
 	fputs(out, stdout);
 	addr += nbytes;
 	buffer = (buffer == buffer1) ? buffer2 : buffer1;
-    }
+    } while (nbytes == BSIZE);
+
     address(out, addr, '\n');
     fputs(out, stdout);
 
-    if (nbytes < 0)
+    if (ferror(fp))
 	perror(fname);
-    if (fd != 0)
-	close(fd);
-}
-
-static ssize_t rread(int fd, void *buffer, size_t count)
-{
-    int ret = 0, nbytes;
-    char *buf = buffer;
-
-    while ((nbytes = read(fd, buf, count)) > 0)
-	count -= nbytes, buf += nbytes, ret += nbytes;
-    if (ret == 0)
-	ret = nbytes;
-
-    return ret;
+    if (fp != stdin)
+	fclose(fp);
 }
 
 #define HEX(n, i) ("0123456789abcdef"[((n) >> 4 * i) & 0xf])
