@@ -1,5 +1,5 @@
 /*
- * $Id: xd.c,v 1.7 2008/08/23 18:46:25 urs Exp $
+ * $Id: xd.c,v 1.8 2008/08/24 05:14:18 urs Exp $
  */
 
 #include <stdio.h>
@@ -8,9 +8,17 @@
 
 #define BSIZE 4096
 
+struct xdstate {
+    unsigned char lbuf[16];
+    unsigned char *last;
+    int addr;
+    int flag;
+};
+
 static void dump_file(char *fname);
-static void dump(char *dst, void *src, int len, void **lastp, int *flagp,
-		 int addr);
+static void dump_init(struct xdstate *st, int addr);
+static void dump_finish(char *dst, struct xdstate *st);
+static void dump(char *dst, void *src, int len, struct xdstate *st);
 static void address(char *dst, int addr, char term);
 
 int main(int argc, char **argv)
@@ -26,13 +34,11 @@ int main(int argc, char **argv)
 
 static void dump_file(char *fname)
 {
-    unsigned char buffer1[BSIZE], buffer2[BSIZE];
-    unsigned char *buffer;
-    void *last = NULL;
+    unsigned char buffer[BSIZE];
     char out[5 * BSIZE];
-    int addr = 0;
-    int nbytes, flag = 0;
+    int nbytes;
     FILE *fp;
+    struct xdstate st;
 
     if (strcmp(fname, "-") == 0)
 	fp = stdin;
@@ -41,16 +47,15 @@ static void dump_file(char *fname)
 	return;
     }
 
-    buffer = buffer1;
+    dump_init(&st, 0);
+
     do {
 	nbytes = fread(buffer, 1, BSIZE, fp);
-	dump(out, buffer, nbytes, &last, &flag, addr);
+	dump(out, buffer, nbytes, &st);
 	fputs(out, stdout);
-	addr += nbytes;
-	buffer = (buffer == buffer1) ? buffer2 : buffer1;
     } while (nbytes == BSIZE);
 
-    address(out, addr, '\n');
+    dump_finish(out, &st);
     fputs(out, stdout);
 
     if (ferror(fp))
@@ -61,16 +66,28 @@ static void dump_file(char *fname)
 
 #define HEX(n, i) ("0123456789abcdef"[((n) >> 4 * i) & 0xf])
 
-static void dump(char *dst, void *src, int len, void **lastp, int *flagp,
-		 int addr)
+static void dump_init(struct xdstate *st, int addr)
 {
-    unsigned char *buffer = src, *last;
-    unsigned char *ptr;
-    char *cp = dst;
-    int count, ident, flag, i;
+    st->flag = 0;
+    st->last = NULL;
+    st->addr = addr;
+}
 
-    last = *lastp;
-    flag = *flagp;
+static void dump_finish(char *dst, struct xdstate *st)
+{
+    address(dst, st->addr, '\n');
+}
+
+static void dump(char *dst, void *src, int len, struct xdstate *st)
+{
+    unsigned char *buffer = src;
+    unsigned char *last, *ptr;
+    char *cp = dst;
+    int addr, count, ident, flag, i;
+
+    last = st->last;
+    flag = st->flag;
+    addr = st->addr;
 
     for (ptr = buffer; ptr < buffer + len; ptr += 16) {
 	count = len - (ptr - buffer);
@@ -105,8 +122,11 @@ static void dump(char *dst, void *src, int len, void **lastp, int *flagp,
     }
     *cp = 0;
 
-    *lastp = last;
-    *flagp = flag;
+    if (last)
+	memcpy(st->lbuf, last, 16);
+    st->last = st->lbuf;
+    st->flag = flag;
+    st->addr = addr;
 }
 
 static void address(char *dst, int addr, char term)
