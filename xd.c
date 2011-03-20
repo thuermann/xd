@@ -1,5 +1,5 @@
 /*
- * $Id: xd.c,v 1.8 2008/08/24 05:14:18 urs Exp $
+ * $Id: xd.c,v 1.9 2011/03/20 21:38:29 urs Exp $
  */
 
 #include <stdio.h>
@@ -15,10 +15,10 @@ struct xdstate {
     int flag;
 };
 
-static void dump_file(char *fname);
+static void dump_file(const char *fname);
 static void dump_init(struct xdstate *st, int addr);
 static void dump_finish(char *dst, struct xdstate *st);
-static void dump(char *dst, void *src, int len, struct xdstate *st);
+static void dump(char *dst, const void *src, int len, struct xdstate *st);
 static void address(char *dst, int addr, char term);
 
 int main(int argc, char **argv)
@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     return 0;
 }
 
-static void dump_file(char *fname)
+static void dump_file(const char *fname)
 {
     unsigned char buffer[BSIZE];
     char out[5 * BSIZE];
@@ -78,10 +78,10 @@ static void dump_finish(char *dst, struct xdstate *st)
     address(dst, st->addr, '\n');
 }
 
-static void dump(char *dst, void *src, int len, struct xdstate *st)
+static void dump(char *dst, const void *src, int len, struct xdstate *st)
 {
-    unsigned char *buffer = src;
-    unsigned char *last, *ptr;
+    const unsigned char *buffer = src;
+    const unsigned char *last, *ptr;
     char *cp = dst;
     int addr, count, ident, flag, i;
 
