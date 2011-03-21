@@ -1,0 +1,4 @@
+This is a very simple, but extremely fast hexdump utility.
+
+It has no options to control output format but is a *lot* faster than
+od, xxd, and hexdump.
