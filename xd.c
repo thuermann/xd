@@ -1,10 +1,11 @@
 /*
- * $Id: xd.c,v 1.9 2011/03/20 21:38:29 urs Exp $
+ * $Id: xd.c,v 1.10 2012/04/04 17:56:58 urs Exp $
  */
 
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <locale.h>
 
 #define BSIZE 4096
 
@@ -23,6 +24,8 @@ static void address(char *dst, int addr, char term);
 
 int main(int argc, char **argv)
 {
+    setlocale(LC_ALL, "");
+
     if (argc > 1)
 	while (++argv, --argc)
 	    dump_file(*argv);
