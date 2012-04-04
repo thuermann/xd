@@ -1,5 +1,5 @@
 /*
- * $Id: xd.c,v 1.10 2012/04/04 17:56:58 urs Exp $
+ * $Id: xd.c,v 1.11 2012/04/04 17:58:42 urs Exp $
  */
 
 #include <stdio.h>
@@ -102,9 +102,9 @@ static void dump(char *dst, const void *src, int len, struct xdstate *st)
 
 	if (!ident) {
 	    address(cp, addr, ' ');
-	    cp += 7;
+	    cp += 9;
 	    for (i = 0; i < 16; i++) {
-		if (i % 4 == 0)
+		if (i % 2 == 0)
 		    *cp++ = ' ';
 		if (i < count)
 		    *cp++ = HEX(ptr[i], 1), *cp++ = HEX(ptr[i], 0);
@@ -134,6 +134,8 @@ static void dump(char *dst, const void *src, int len, struct xdstate *st)
 
 static void address(char *dst, int addr, char term)
 {
+    *dst++ = HEX(addr, 7);
+    *dst++ = HEX(addr, 6);
     *dst++ = HEX(addr, 5);
     *dst++ = HEX(addr, 4);
     *dst++ = HEX(addr, 3);
