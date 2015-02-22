@@ -1,5 +1,5 @@
 /*
- * $Id: xd.c,v 1.11 2012/04/04 17:58:42 urs Exp $
+ * $Id: xd.c,v 1.12 2015/02/22 22:40:12 urs Exp $
  */
 
 #include <stdio.h>
@@ -16,7 +16,7 @@ struct xdstate {
     int flag;
 };
 
-static void dump_file(const char *fname);
+static int  dump_file(const char *fname);
 static void dump_init(struct xdstate *st, int addr);
 static void dump_finish(char *dst, struct xdstate *st);
 static void dump(char *dst, const void *src, int len, struct xdstate *st);
@@ -24,18 +24,21 @@ static void address(char *dst, int addr, char term);
 
 int main(int argc, char **argv)
 {
+    int errflg = 0;
+
     setlocale(LC_ALL, "");
 
-    if (argc > 1)
+    if (argc > 1) {
 	while (++argv, --argc)
-	    dump_file(*argv);
-    else
-	dump_file("-");
+	    if (dump_file(*argv))
+		errflg = 1;
+    } else if (dump_file("-"))
+	errflg = 1;
 
-    return 0;
+    return errflg;
 }
 
-static void dump_file(const char *fname)
+static int dump_file(const char *fname)
 {
     unsigned char buffer[BSIZE];
     char out[5 * BSIZE];
@@ -47,7 +50,7 @@ static void dump_file(const char *fname)
 	fp = stdin;
     else if (!(fp = fopen(fname, "r"))) {
 	perror(fname);
-	return;
+	return 1;
     }
 
     dump_init(&st, 0);
@@ -61,10 +64,14 @@ static void dump_file(const char *fname)
     dump_finish(out, &st);
     fputs(out, stdout);
 
-    if (ferror(fp))
+    if (ferror(fp)) {
 	perror(fname);
+	return 1;
+    }
     if (fp != stdin)
 	fclose(fp);
+
+    return 0;
 }
 
 #define HEX(n, i) ("0123456789abcdef"[((n) >> 4 * i) & 0xf])
