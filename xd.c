@@ -1,5 +1,5 @@
 /*
- * $Id: xd.c,v 1.12 2015/02/22 22:40:12 urs Exp $
+ * $Id: xd.c,v 1.13 2016/07/25 15:23:55 urs Exp $
  */
 
 #include <stdio.h>
@@ -20,7 +20,7 @@ static int  dump_file(const char *fname);
 static void dump_init(struct xdstate *st, int addr);
 static void dump_finish(char *dst, struct xdstate *st);
 static void dump(char *dst, const void *src, int len, struct xdstate *st);
-static void address(char *dst, int addr, char term);
+static int  address(char *dst, int addr, char term);
 
 int main(int argc, char **argv)
 {
@@ -108,8 +108,7 @@ static void dump(char *dst, const void *src, int len, struct xdstate *st)
 	    ident = 0;
 
 	if (!ident) {
-	    address(cp, addr, ' ');
-	    cp += 9;
+	    cp += address(cp, addr, ' ');
 	    for (i = 0; i < 16; i++) {
 		if (i % 2 == 0)
 		    *cp++ = ' ';
@@ -139,16 +138,20 @@ static void dump(char *dst, const void *src, int len, struct xdstate *st)
     st->addr = addr;
 }
 
-static void address(char *dst, int addr, char term)
+static int address(char *dst, int addr, char term)
 {
-    *dst++ = HEX(addr, 7);
-    *dst++ = HEX(addr, 6);
-    *dst++ = HEX(addr, 5);
-    *dst++ = HEX(addr, 4);
-    *dst++ = HEX(addr, 3);
-    *dst++ = HEX(addr, 2);
-    *dst++ = HEX(addr, 1);
-    *dst++ = HEX(addr, 0);
-    *dst++ = term;
-    *dst = 0;
+    char *cp = dst;
+
+    *cp++ = HEX(addr, 7);
+    *cp++ = HEX(addr, 6);
+    *cp++ = HEX(addr, 5);
+    *cp++ = HEX(addr, 4);
+    *cp++ = HEX(addr, 3);
+    *cp++ = HEX(addr, 2);
+    *cp++ = HEX(addr, 1);
+    *cp++ = HEX(addr, 0);
+    *cp++ = term;
+    *cp = 0;
+
+    return cp - dst;
 }
