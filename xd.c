@@ -1,5 +1,5 @@
 /*
- * $Id: xd.c,v 1.13 2016/07/25 15:23:55 urs Exp $
+ * $Id: xd.c,v 1.14 2016/07/25 15:24:05 urs Exp $
  */
 
 #include <stdio.h>
@@ -12,15 +12,15 @@
 struct xdstate {
     unsigned char lbuf[16];
     unsigned char *last;
-    int addr;
+    unsigned long long addr;
     int flag;
 };
 
 static int  dump_file(const char *fname);
-static void dump_init(struct xdstate *st, int addr);
+static void dump_init(struct xdstate *st, unsigned long long addr);
 static void dump_finish(char *dst, struct xdstate *st);
 static void dump(char *dst, const void *src, int len, struct xdstate *st);
-static int  address(char *dst, int addr, char term);
+static int  address(char *dst, unsigned long long addr, char term);
 
 int main(int argc, char **argv)
 {
@@ -76,7 +76,7 @@ static int dump_file(const char *fname)
 
 #define HEX(n, i) ("0123456789abcdef"[((n) >> 4 * i) & 0xf])
 
-static void dump_init(struct xdstate *st, int addr)
+static void dump_init(struct xdstate *st, unsigned long long addr)
 {
     st->flag = 0;
     st->last = NULL;
@@ -93,7 +93,8 @@ static void dump(char *dst, const void *src, int len, struct xdstate *st)
     const unsigned char *buffer = src;
     const unsigned char *last, *ptr;
     char *cp = dst;
-    int addr, count, ident, flag, i;
+    int count, ident, flag, i;
+    unsigned long long addr;
 
     last = st->last;
     flag = st->flag;
@@ -138,18 +139,13 @@ static void dump(char *dst, const void *src, int len, struct xdstate *st)
     st->addr = addr;
 }
 
-static int address(char *dst, int addr, char term)
+static int address(char *dst, unsigned long long addr, char term)
 {
     char *cp = dst;
+    int n;
 
-    *cp++ = HEX(addr, 7);
-    *cp++ = HEX(addr, 6);
-    *cp++ = HEX(addr, 5);
-    *cp++ = HEX(addr, 4);
-    *cp++ = HEX(addr, 3);
-    *cp++ = HEX(addr, 2);
-    *cp++ = HEX(addr, 1);
-    *cp++ = HEX(addr, 0);
+    for (n = 12; --n >= 0; )
+	*cp++ = HEX(addr, n);
     *cp++ = term;
     *cp = 0;
 
