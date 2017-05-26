@@ -1,5 +1,5 @@
 /*
- * $Id: xd.c,v 1.14 2016/07/25 15:24:05 urs Exp $
+ * $Id: xd.c,v 1.15 2017/05/26 14:58:44 urs Exp $
  */
 
 #include <stdio.h>
@@ -74,7 +74,7 @@ static int dump_file(const char *fname)
     return 0;
 }
 
-#define HEX(n, i) ("0123456789abcdef"[((n) >> 4 * i) & 0xf])
+#include "hextab.c"
 
 static void dump_init(struct xdstate *st, unsigned long long addr)
 {
@@ -114,7 +114,7 @@ static void dump(char *dst, const void *src, int len, struct xdstate *st)
 		if (i % 2 == 0)
 		    *cp++ = ' ';
 		if (i < count)
-		    *cp++ = HEX(ptr[i], 1), *cp++ = HEX(ptr[i], 0);
+		    memcpy(cp, hextab[ptr[i]], 2), cp += 2;
 		else
 		    *cp++ = ' ', *cp++ = ' ';
 	    }
@@ -144,8 +144,8 @@ static int address(char *dst, unsigned long long addr, char term)
     char *cp = dst;
     int n;
 
-    for (n = 12; --n >= 0; )
-	*cp++ = HEX(addr, n);
+    for (n = 6; --n >= 0; )
+	memcpy(cp, hextab[(addr >> (n * 8)) & 0xff], 2), cp += 2;
     *cp++ = term;
     *cp = 0;
 
