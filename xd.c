@@ -1,11 +1,18 @@
 /*
- * $Id: xd.c,v 1.15 2017/05/26 14:58:44 urs Exp $
+ * $Id: xd.c,v 1.16 2019/01/13 00:54:26 urs Exp $
  */
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
 #include <locale.h>
+#include <unistd.h>
+
+static void usage(const char *name)
+{
+    fprintf(stderr, "Usage: %s [-g n] files...\n", name);
+}
 
 #define BSIZE 4096
 
@@ -14,31 +21,48 @@ struct xdstate {
     unsigned char *last;
     unsigned long long addr;
     int flag;
+    int group;
 };
 
-static int  dump_file(const char *fname);
-static void dump_init(struct xdstate *st, unsigned long long addr);
+static int  dump_file(const char *fname, int group);
+static void dump_init(struct xdstate *st, unsigned long long addr, int group);
 static void dump_finish(char *dst, struct xdstate *st);
 static void dump(char *dst, const void *src, int len, struct xdstate *st);
 static int  address(char *dst, unsigned long long addr, char term);
 
 int main(int argc, char **argv)
 {
-    int errflg = 0;
+    int errflg = 0, group = 2;
+    int opt;
 
     setlocale(LC_ALL, "");
 
-    if (argc > 1) {
-	while (++argv, --argc)
-	    if (dump_file(*argv))
+    while ((opt = getopt(argc, argv, "g:")) != -1) {
+	switch (opt) {
+	case 'g':
+	    group = atoi(optarg);
+	    break;
+	default:
+	    errflg = 1;
+	    break;
+	}
+    }
+    if (errflg) {
+	usage(argv[0]);
+	exit(1);
+    }
+
+    if (argc - optind > 0) {
+	while (optind < argc)
+	    if (dump_file(argv[optind++], group))
 		errflg = 1;
-    } else if (dump_file("-"))
+    } else if (dump_file("-", group))
 	errflg = 1;
 
     return errflg;
 }
 
-static int dump_file(const char *fname)
+static int dump_file(const char *fname, int group)
 {
     unsigned char buffer[BSIZE];
     char out[5 * BSIZE];
@@ -53,7 +77,7 @@ static int dump_file(const char *fname)
 	return 1;
     }
 
-    dump_init(&st, 0);
+    dump_init(&st, 0, group);
 
     do {
 	nbytes = fread(buffer, 1, BSIZE, fp);
@@ -76,11 +100,12 @@ static int dump_file(const char *fname)
 
 #include "hextab.c"
 
-static void dump_init(struct xdstate *st, unsigned long long addr)
+static void dump_init(struct xdstate *st, unsigned long long addr, int group)
 {
-    st->flag = 0;
-    st->last = NULL;
-    st->addr = addr;
+    st->flag  = 0;
+    st->last  = NULL;
+    st->addr  = addr;
+    st->group = group;
 }
 
 static void dump_finish(char *dst, struct xdstate *st)
@@ -93,7 +118,7 @@ static void dump(char *dst, const void *src, int len, struct xdstate *st)
     const unsigned char *buffer = src;
     const unsigned char *last, *ptr;
     char *cp = dst;
-    int count, ident, flag, i;
+    int count, gcount, ident, flag, i;
     unsigned long long addr;
 
     last = st->last;
@@ -110,9 +135,12 @@ static void dump(char *dst, const void *src, int len, struct xdstate *st)
 
 	if (!ident) {
 	    cp += address(cp, addr, ' ');
+	    gcount = 1;
 	    for (i = 0; i < 16; i++) {
-		if (i % 2 == 0)
+		if (--gcount == 0) {
 		    *cp++ = ' ';
+		    gcount = st->group;
+		}
 		if (i < count)
 		    memcpy(cp, hextab[ptr[i]], 2), cp += 2;
 		else
