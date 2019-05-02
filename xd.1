@@ -1,14 +1,12 @@
 .\"
-.\" $Id: xd.1,v 1.3 2019/01/13 00:54:26 urs Exp $
+.\" $Id: xd.1,v 1.4 2019/05/02 10:21:05 urs Exp $
 .\"
 .TH XD 1 "Jan 13, 2019" "" "User Commands"
 .SH NAME
 xd \- hexdump
 .SH SYNOPSIS
 .B xd
-[
-.BI \-g group
-]
+.RI [ \fB\-g\fP\ group ]
 .RI [ file " ...]"
 .SH DESCRIPTION
 .B xd
@@ -21,7 +19,7 @@ but it is a
 faster than these.
 .SH OPTIONS
 .TP
-.BI \-g group
+.BI \-g \ group
 Set the number of bytes grouped together.  Groups are separated by a
 single space.  The default is 2 bytes per group.
 .SH "SEE ALSO"
